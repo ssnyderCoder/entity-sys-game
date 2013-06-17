@@ -1,0 +1,140 @@
+Prototype Game Idea: ALPHA DEFENSE
+--------------------
+The player must control a tank on a planet's surface to shoot down falling debris.
+To fire at the falling debris, the player must type in letters and click where he wants to fire.
+The letters are fired and act as projectiles that deal varying damage based on specific letter
+upgrades, word upgrades, enemy weaknesses, and other factors.
+Non-words that are typed will fire letters fast that spread and are less accurate.
+Words that are typed will fire letters slowly directly at the location clicked and are more powerful.
+Specific words can only be typed once per game.
+The player's goal is to survive as long as possible.
+The player loses if too much debris hits the surface (which has 100 hp total).
+After losing, the player is shown a game over screen and returns to the menu screen.
+--------------------------
+CHANGES FROM ORIGINAL PLAN
+--------------------------
+Modify the gameplay mechanic:  Player types word/letter combinations BEFORE match begins.  Then player can fire those combinations while ingame by switching between them using the number keys.
+--------------------
+To Add Later
+--------------------
+-Preloader
+-Tutorial Screen / Help Screen
+-Game Pausing
+-Upgrading words and letters may come later
+-Limiting tank letter capacity and upgrading it may come later
+-Limiting player control to only letters or aiming may come later
+-High Score list may come later
+-Moving tank may come later
+---------------------
+Screens
+---------------------
+Menu Screen - (Start -> Game Screen), (Exit*)
+Prep Screen - Select word/letter combinations to use
+Game Screen - TextBox, game objects, time, points, surface hp remaining [->] Failure Screen
+Failure Screen - time, points, (Main Menu -> Menu Screen)
+----------------------
+Game objects
+----------------------
+Tank - 				On middle of surface; cannon rotates to point at mouse if mouse in valid region; controlled by player; fires letters
+Surface - 			Has 100 hp; debris that hits it reduces its hp; game over when its hp is 0
+Asteroid (Small) - 	1 hp; deals 1 damage; falls fast
+Asteroid (Medium) - 10 hp; deals 5 damage; falls at medium speed
+Asteroid (Large) - 	150 hp; deal 20 damage; falls slowly
+Letter - 			fired by Tank; 1 damage(if spread) or x damage (if part of word: x = word length) 
+Green Reticle - 	centered on mouse as long as mouse in valid position; used for firing
+Red Reticle - 		placed after letters fired
+Textbox - 			Greyed out while firing letters; shows letters typed; when fired, letters gradually removed as letters fired (256 x 32: font 14 times new roman)
+Explosion - 		graphical explosion
+Timer - 			Shows the time that has passed
+----------------------
+Resources
+----------------------
+*Text file with all english words
+~Graphics hard coded (Tank, Surface, Asteroid, Letter, Reticle, TextBox, Explosion, Timer)
+*Simple Sounds(Tank_Fired_Letter, Surface_Damaged, Asteroid_Hit, Asteroid_Destroyed, Victory, Loss)
+----------------------
+Systems - Game Screen
+----------------------
+GameManager 			- Handles game loss condition and some display updates;
+							if surface destroyed, switch to failure screen
+							adds points based on survival time
+							updates Timer, Points, Surface HP display
+AsteroidSpawningSystem	- Spawns asteroids at the top of the screen based on time remaining
+							As time passes, asteroids are spawned with a higher frequency and speed
+							Bigger asteroids are rare early on, but common later
+CollisionSystem 		- Handles collisions
+							letters that hit asteroids deal damage, show explosion (based on power), and disappear
+							asteroids that hit surface deal damage, show explosion (based on power), and disappear
+ReticleSystem		 	- Centers reticle on mouse, but only if in valid position [POLLS MOUSE]
+							Rotates objects to face reticle position
+RenderSystem			- Renders all game objects
+AnimationSystem			- Updates animated Render objects
+MovementSystem			- Moves objects; if bouncing object hits left or right side of screen, make it bounce off (Asteroid)
+							Remove non-bouncing objects (Letters)
+TextAmmoSystem			- letters typed are entered into textbox if it is usable[POLLS KEYBOARD MANUALLY]
+TankControlSystem		- click initiates firing sequence [POLLS MOUSE]
+							Spawns red reticle at firing location
+							Cannot trigger while firing
+							Used words that are typed are fired as gibberish
+TankFiringSystem		- if firing, fire letters at reticle
+							Words fire slowly, but gibberish fires quickly
+							letters are gradually fired until textbox empty
+SoundSystem				- plays sounds
+ButtonSystem			- While active, handles button clicking [POLLS MOUSE]
+							alerts any listening states to which buttons have been clicked
+----------------------
+Systems & Components
+----------------------
+*GameManager 			-> (Game), (Surface, Health), (Timer), [Labels saved internally]
+*AsteroidSpawningSystem	-> (Game)
+*CollisionSystem			-> (Asteroid, Health, Collision, Position, ExplosiveDamage), (LetterBullet, Collision, Position, ExplosiveDamage),
+								(Surface, Health, Position)
+*ReticleSystem			-> (Reticle, Position), (TankCannon, Position)
+*RenderSystem			-> (Position, Render)
+*AnimationSystem		-> (Animation)
+*MovementSystem			-> (Position, Motion)
+*TextAmmoSystem			-> (Game), (TextAmmo)
+*TankControlSystem		-> (Game), (TankCannon, Position), (Reticle, Position), (TextAmmo)
+*TankFiringSystem		-> (TankCannon, Position), (Reticle, Position), (TextAmmo)
+*SoundSystem				-> (Sound)
+ButtonSystem			-> (Button, Position)
+----------------------
+Components
+----------------------
+*Game					- int points, Number time, List<String> wordsUsed
+*Surface
+*Asteroid				
+*LetterBullet			- char letter
+*ExplosiveDamage		- Number power
+*Health					- int health
+*Collision				- Number radius
+*Reticle				- Boolean isMouseFocused
+*TankCannon				- Boolean isLockedInPosition, Number basePower
+*Position				- Number xPos, Number yPos, Number rotation, Number width, Number height
+*Render					- DisplayObject display
+*Motion					- Number xMotion, Number yMotion, Boolean canBounceOffSide
+*Animation				- IAnimatable animatable (DisplayObject that implements this interface: same one passed to Render)
+*TextAmmo				- TextBox letters, Boolean isWord, Boolean isEnabled
+*TextDisplay			- TextBox text, int id
+*Sound					- "SoundObject" sound, Boolean doLoop
+*Label					- TextBox text
+Button					- String name
+// HashMap<String> validWords = included in a shared class
+----------------------
+Screens & Systems
+----------------------
+Menu Screen - RenderSystem, AnimationSystem, SoundSystem, ButtonSystem
+Game Screen - All except ButtonSystem (may change in future)
+	-> Failure Screen - Disable TankControlSystem & TextAmmoSystem
+----------------------------
+CURRENT PROBLEMS
+----------------------------
+-Keyboard still at times inserts letters while firing/clicking
+----------------------------
+FIXED PROBLEMS
+----------------------------
+-keyboard sometimes doesnt register when combined with mouse usage (possibly related to use of TextField)
+---Happens when clicking on a letterBullet ( causes focus to go onto bullets textfield, which is then removed when the bullet disappears )
+----FIXED by disabling mouseinput for letterbullet textfields
+-firing at leftmost or rightmost side creates bullets that go to the surface
+----FIXED by disabling bullets from having a downward motion
